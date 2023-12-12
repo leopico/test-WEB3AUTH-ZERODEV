@@ -10,10 +10,7 @@ import { ethers } from 'ethers';
 
 const contractAddress = "0x795EF5Da7FfA14CBc42DB628F0a0d44FD36545Dd"
 
-
-
 const WalletContext: any = () => {
-    const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
     const [web3auth, setWeb3Auth] = useState<Web3Auth | null>(null);
     const [provider, setProvider] = useState<IProvider | null>(null);
     const [userData, setUserData] = useState<any>({});
@@ -29,10 +26,6 @@ const WalletContext: any = () => {
     useEffect(() => {
         const init = async () => {
             try {
-                const storedIsLoggedIn = localStorage.getItem('isLoggedIn');
-                if (storedIsLoggedIn) {
-                    setIsLoggedIn(JSON.parse(storedIsLoggedIn));
-                }
                 const auth = new Web3Auth({
                     clientId: "BKSVKRjxiK3OYqrH94cjJKPpXwQ0DHBc8IBiDK2iUpouHpvdnObI3ngbs1GQzI7gWKFtJ9xnai0mRvJ5ceT-xLE",
                     chainConfig: {
@@ -44,6 +37,9 @@ const WalletContext: any = () => {
                 });
                 await auth.initModal();
                 setWeb3Auth(auth);
+                if(signer) {
+                    setSigner(signer);
+                }
             } catch (error) {
                 console.error(error);
             } finally {
@@ -57,7 +53,6 @@ const WalletContext: any = () => {
         try {
             if (!web3auth) {
                 console.error("Web3Auth not initialized yet");
-                // Handle the case where Web3Auth is not initialized
                 return;
             }
             setLoader(true);
@@ -96,15 +91,11 @@ const WalletContext: any = () => {
             setAddress(zeroAddress);
             setSigner(signer);
             setLoader(false);
-            setIsLoggedIn(true); // Update the state to indicate the user is logged in
-            localStorage.setItem('isLoggedIn', JSON.stringify(true));
         } catch (error) {
             setLoader(false);
             console.error("Login error", error);
-            // Handle the login error, display a message, etc.
         }
     };
-
 
     const disconnect = async () => {
         try {
@@ -115,10 +106,9 @@ const WalletContext: any = () => {
             setLogoutLoader(true);
             await web3auth.logout();
             setProvider(null);
+            setSigner(null);
             setUserData({});
-            setLogoutLoader(false);
-            setIsLoggedIn(false);
-            localStorage.removeItem('isLoggedIn');
+            setLogoutLoader(false); 
         } catch (error) {
             console.log("logout", error)
         }
@@ -126,7 +116,7 @@ const WalletContext: any = () => {
 
     const getData = async () => {
         try {
-            if (!provider) {
+            if (!provider && !signer) {
                 console.log("Provider not available");
                 return;
             }
@@ -151,6 +141,7 @@ const WalletContext: any = () => {
         }
     };
 
+    //need to check the balance have or not
     const zeroSentETH = async () => {
         try {
             if (!provider || !signer) {
@@ -161,7 +152,7 @@ const WalletContext: any = () => {
             const { hash }: any = await signer?.sendUserOperation({
                 target: "0xaaC3A7B643915d17eAcc3DcFf8e1439fB4B1a3D2",
                 data: '0x',
-                value: ethers.utils.parseEther("0.1").toBigInt(),
+                value: ethers.utils.parseEther("0").toBigInt(),
             });
             const response = await signer?.waitForUserOperationTransaction(hash);
             console.log("sentResponse", response);
@@ -202,7 +193,7 @@ const WalletContext: any = () => {
 
     const callName = async () => {
         try {
-            if (!provider) {
+            if (!provider && !signer) {
                 console.log("Provider or signer not available");
                 return;
             }
@@ -278,8 +269,8 @@ const WalletContext: any = () => {
     return (
         <div className='flex flex-col justify-center items-center space-y-2'>
             {loadingInit ? (
-                <span>Loading...</span>
-            ) : isLoggedIn && provider ? (
+                <span className='text-xs font-bold text-opacity-5'>loading...</span>
+            ) : signer ? (
                 loggedInView
             ) : (
                 unLoggedInView
