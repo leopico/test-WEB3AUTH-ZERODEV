@@ -257,6 +257,7 @@ const WalletContext: any = () => {
                     nameLoader ? "loading" : "call name"
                 }
             </button>
+            <span>must have gas fee</span>
             <button onClick={web3authMint} className='bg-gray-400 px-6 py-2 rounded'>
                 {
                     authMintLoader ? "loading" : "web3auth mint"
